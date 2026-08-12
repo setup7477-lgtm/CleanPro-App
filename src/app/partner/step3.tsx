@@ -2,13 +2,14 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Platform, // ✅ Added Platform import
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function PartnerStep3() {
@@ -17,14 +18,28 @@ export default function PartnerStep3() {
   const [cnicFront, setCnicFront] = useState<string | null>(null);
   const [cnicBack, setCnicBack] = useState<string | null>(null);
 
+  // ✅ SAFE IMAGE PICKER (Prevents crashes on Android)
   const pickImage = async (setImage: (uri: string) => void) => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setImage(result.assets[0].uri);
+    try {
+      // For Android, explicitly ask for permission first
+      if (Platform.OS === 'android') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert("Permission Denied", "Please allow access to your gallery to upload photos.");
+          return;
+        }
+      }
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Could not open gallery. Please try again.");
     }
   };
 

@@ -2,13 +2,14 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Platform, // ✅ Added Platform import
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function PartnerStep4() {
@@ -17,18 +18,27 @@ export default function PartnerStep4() {
   const [photo1, setPhoto1] = useState<string | null>(null);
   const [photo2, setPhoto2] = useState<string | null>(null);
 
+  // ✅ SAFE CAMERA PICKER (Prevents crashes on Android)
   const takePhoto = async (setPhoto: (uri: string) => void) => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Permission Denied", "Camera access is required.");
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      quality: 1,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setPhoto(result.assets[0].uri);
+    try {
+      // For Android, explicitly ask for camera permission first
+      if (Platform.OS === 'android') {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert("Permission Denied", "Please allow camera access to take photos.");
+          return;
+        }
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 1,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setPhoto(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Could not open camera. Please try again.");
     }
   };
 
