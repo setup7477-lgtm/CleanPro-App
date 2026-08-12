@@ -1,65 +1,90 @@
-// ==========================================
-// 1. CLEANER INTERFACE
-// ==========================================
-export interface Cleaner {
+// ... existing Cleaner, CustomerProfile, Booking, Review interfaces ...
+// ADD THESE BELOW:
+
+export type MaritalStatus = "Married" | "Unmarried";
+export type RateType = "Per Hour" | "Per Day" | "Per Job";
+export type AvailabilityType = "Full Time" | "Part Time" | "Flexible";
+export type ApplicationStatus = "Draft" | "Submitted" | "Under Review" | "Approved" | "Rejected" | "Suspended";
+
+export interface PartnerDocuments {
+  // Own CNIC
+  cnicFrontUri: string;
+  cnicBackUri: string;
+  
+  // Spouse/Parent (Conditional)
+  beneficiaryName: string;
+  beneficiaryRelation: "Father" | "Mother" | "Other Guardian" | "Husband";
+  beneficiaryCnicFrontUri: string;
+  beneficiaryCnicBackUri: string;
+  
+  // Profile Photos
+  profilePhoto1Uri: string;
+  profilePhoto2Uri: string;
+}
+
+export interface PartnerAvailability {
+  maxHoursPerDay: number; // e.g. 8
+  availabilityType: AvailabilityType;
+}
+
+export interface PartnerApplication {
+  id?: string; // Firebase auto-id
+  userId: string; // Auth UID
+  
+  // Step 1
+  firstName: string;
+  lastName: string;
+  gender: "Male" | "Female";
+  maritalStatus: MaritalStatus;
+  phone: string;
+  address: string;
+  city: string;
+  area: string;
+  locationCoords?: { latitude: number; longitude: number };
+  
+  // Step 5
+  services: string[]; // Array of selected services
+  
+  // Step 6
+  availability: PartnerAvailability;
+  
+  // Step 7
+  expectedPay: number;
+  rateType: RateType;
+  
+  // Step 8
+  experience: string;
+  experienceDetails?: string;
+  
+  // Step 9
+  languages: string[];
+  
+  // Sensitive Data (Step 2, 3, 4)
+  documents: PartnerDocuments;
+  
+  // Meta
+  status: ApplicationStatus;
+  createdAt: string;
+  updatedAt: string;
+  consentGiven: boolean;
+}
+
+// For the Public Profile (After Approval)
+export interface PartnerProfile {
   id: string;
-  name: string;
+  userId: string;
+  fullName: string;
   gender: "Male" | "Female";
   rating: number;
-  avatar: string; // URL or local require
+  profilePhotoUri: string;
+  services: string[];
+  languages: string[];
+  experience: string;
+  availability: PartnerAvailability;
+  expectedPay: number;
+  rateType: RateType;
+  city: string;
+  area: string;
   jobsCompleted: number;
-  experience: string; // e.g. "2 Years"
-  services: string[]; // e.g. ["Home Cleaning", "Deep Cleaning"]
   isAvailable: boolean;
-  pricePerHour: number;
-}
-
-// ==========================================
-// 2. CUSTOMER PROFILE INTERFACE
-// ==========================================
-export interface CustomerProfile {
-  id: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  avatar: string;
-  savedAddresses: string[];
-}
-
-// ==========================================
-// 3. BOOKING INTERFACE (Ready for Database)
-// ==========================================
-export interface Booking {
-  id: string;
-  customerId: string;
-  cleanerId: string;
-  serviceType: string;    // e.g. "Home Cleaning"
-  packageType: string;    // e.g. "Premium", "Standard"
-  price: number;
-  date: string;           // Stored as ISO string or "YYYY-MM-DD"
-  time: string;           // e.g. "10:00 AM"
-  address: string;
-  status: 
-    | "Pending" 
-    | "Accepted" 
-    | "Cleaner Assigned" 
-    | "On The Way" 
-    | "Cleaning Started" 
-    | "Completed" 
-    | "Cancelled";
-  specialInstructions?: string; // Optional
-  review?: Review;              // Optional, nested object
-}
-
-// ==========================================
-// 4. REVIEW INTERFACE
-// ==========================================
-export interface Review {
-  id: string;
-  bookingId: string;
-  cleanerId: string;
-  customerId: string;
-  rating: number;         // 1 to 5
-  comment: string;
-  date: string;           // ISO date string
 }

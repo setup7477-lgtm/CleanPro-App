@@ -191,6 +191,14 @@ export default function ProfileScreen() {
             {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
           </Text>
         </TouchableOpacity>
+
+        {/* ✅ BECOME A PARTNER BUTTON ADDED HERE */}
+        <TouchableOpacity 
+          style={styles.partnerLink} 
+          onPress={() => router.push("/partner/step1" as any)}
+        >
+          <Text style={styles.partnerLinkText}>🧹 Become a CleanPro Partner</Text>
+        </TouchableOpacity>
       </ScrollView>
     );
   }
@@ -317,4 +325,20 @@ const styles = StyleSheet.create({
 
   logoutBtn: { backgroundColor: "#fee2e2", padding: 16, borderRadius: 12, alignItems: "center", borderWidth: 1, borderColor: "#fecaca" },
   logoutBtnText: { color: "#dc2626", fontWeight: "bold", fontSize: 16 },
+  
+  // ✅ BECOME A PARTNER STYLES
+  partnerLink: {
+    marginTop: 20,
+    padding: 12,
+    backgroundColor: "#f0fdfa",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#00aa88",
+    alignItems: "center",
+  },
+  partnerLinkText: {
+    color: "#00aa88",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
 });
