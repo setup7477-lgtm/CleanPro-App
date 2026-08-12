@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleanPro Admin Portal</title>
+    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-auth-compat.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #333; padding: 30px; }
+        #root { max-width: 1200px; margin: 0 auto; }
+
+        .login-box { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 100%; max-width: 400px; margin: 100px auto; }
+        input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
+        .btn-primary { background: #00aa88; color: white; padding: 14px; border: none; border-radius: 8px; font-size: 16px; width: 100%; cursor: pointer; font-weight: bold; }
+        .btn-primary:hover { background: #008f72; }
+        .login-error { color: #dc2626; margin-top: 10px; display: none; font-size: 14px; }
+
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+        .admin-title { font-size: 28px; font-weight: bold; display: flex; align-items: center; gap: 10px; color: #111; }
+        .logout-btn { background: #fee2e2; color: #dc2626; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .logout-btn:hover { background: #fecaca; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; border-left: 5px solid #00aa88; }
+        .stat-card.blue { border-left-color: #3b82f6; }
+        .stat-card.orange { border-left-color: #f59e0b; }
+        .stat-card.green { border-left-color: #22c55e; }
+        .stat-card.red { border-left-color: #ef4444; }
+        .stat-card.purple { border-left-color: #8b5cf6; }
+        .stat-number { font-size: 28px; font-weight: bold; margin-bottom: 5px; }
+        .stat-label { font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .section-title { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #111; }
+        .list-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        @media (min-width: 768px) { .list-grid { grid-template-columns: 1fr 1fr; } }
+
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #eee; position: relative; }
+        .card h3 { font-size: 18px; margin-bottom: 10px; color: #111; }
+        .card p { margin-bottom: 6px; font-size: 14px; color: #555; }
+        .card p strong { color: #333; }
+        .status-select { padding: 6px 12px; border-radius: 6px; border: 1px solid #ddd; font-size: 14px; margin-top: 5px; background: white; cursor: pointer; }
+        
+        .pending-badge { background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 8px; }
+        .verify-btn { background: #00aa88; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-right: 10px; }
+        .verify-btn:hover { background: #008f72; }
+        .action-row { margin-top: 12px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .loading-msg { text-align: center; color: #666; padding: 40px; font-size: 16px; }
+
+        .ss-preview { max-width: 100px; max-height: 100px; border-radius: 6px; border: 1px solid #ddd; margin-top: 8px; object-fit: cover; cursor: pointer; }
+        .ss-preview:hover { opacity: 0.8; }
+        .location-link { color: #00aa88; font-weight: bold; text-decoration: underline; cursor: pointer; }
+        .location-link:hover { color: #008f72; }
+        .no-ss { color: #999; font-style: italic; font-size: 12px; margin-top: 5px; display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="root">
+        <div id="login-screen" class="login-box">
+            <h2 style="margin-bottom: 20px; color: #00aa88;">🧹 Admin Login</h2>
+            <input type="email" id="email" placeholder="Email address" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button id="loginBtn" class="btn-primary">Sign In</button>
+            <p id="login-error" class="login-error"></p>
+        </div>
+
+        <div id="dashboard-screen" style="display: none;">
+            <div class="admin-header">
+                <div class="admin-title">🧹 CleanPro Admin Portal</div>
+                <button id="logoutBtn" class="logout-btn">Logout</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card blue"><div class="stat-number" id="stat-total">0</div><div class="stat-label">Total Bookings</div></div>
+                <div class="stat-card orange"><div class="stat-number" id="stat-pending">0</div><div class="stat-label">Pending</div></div>
+                <div class="stat-card green"><div class="stat-number" id="stat-completed">0</div><div class="stat-label">Completed</div></div>
+                <div class="stat-card red"><div class="stat-number" id="stat-cancelled">0</div><div class="stat-label">Cancelled</div></div>
+                <div class="stat-card purple"><div class="stat-number" id="stat-revenue">Rs 0</div><div class="stat-label">Total Revenue</div></div>
+            </div>
+
+            <div class="section-title">Live Booking Feed</div>
+            <div id="bookings-list"><div class="loading-msg">Loading real-time data...</div></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbUldzMUX_7dzaH7Aa9E4QYHn4qM6KMIU",
+            authDomain: "cleaner-app-a06fc.firebaseapp.com",
+            projectId: "cleaner-app-a06fc",
+            storageBucket: "cleaner-app-a06fc.firebasestorage.app",
+            messagingSenderId: "954165084411",
+            appId: "1:954165084411:web:da9c7edc39d4204058705e",
+            measurementId: "G-QF6WV6M0VV"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        const loginScreen = document.getElementById('login-screen');
+        const dashboardScreen = document.getElementById('dashboard-screen');
+        const bookingsList = document.getElementById('bookings-list');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const loginError = document.getElementById('login-error');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+
+        const statTotal = document.getElementById('stat-total');
+        const statPending = document.getElementById('stat-pending');
+        const statCompleted = document.getElementById('stat-completed');
+        const statCancelled = document.getElementById('stat-cancelled');
+        const statRevenue = document.getElementById('stat-revenue');
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                loginScreen.style.display = 'none';
+                dashboardScreen.style.display = 'block';
+                loadDashboardData();
+            } else {
+                loginScreen.style.display = 'block';
+                dashboardScreen.style.display = 'none';
+            }
+        });
+
+        loginBtn.addEventListener('click', () => {
+            auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value)
+                .catch(error => {
+                    loginError.textContent = error.message;
+                    loginError.style.display = 'block';
+                });
+        });
+
+        logoutBtn.addEventListener('click', () => auth.signOut());
+
+        async function loadDashboardData() {
+            bookingsList.innerHTML = '<div class="loading-msg">Updating live feed...</div>';
+            statTotal.textContent = '...'; statPending.textContent = '...';
+            statCompleted.textContent = '...'; statCancelled.textContent = '...';
+            statRevenue.textContent = '...';
+
+            try {
+                const snapshot = await db.collection("bookings").orderBy("createdAt", "desc").get();
+                let total = 0, pending = 0, completed = 0, cancelled = 0, revenue = 0;
+                let html = '<div class="list-grid">';
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    total++;
+                    if (data.status === 'Pending') pending++;
+                    else if (data.status === 'Completed') { completed++; revenue += (data.price || 0); }
+                    else if (data.status === 'Cancelled') cancelled++;
+
+                    // Format Location
+                    let locationHtml = '<p><strong>Location:</strong> N/A</p>';
+                    if (data.location && data.location.latitude && data.location.longitude) {
+                        const lat = data.location.latitude;
+                        const lng = data.location.longitude;
+                        locationHtml = `<p><strong>Location:</strong> 
+                            <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" class="location-link">
+                                📍 ${lat.toFixed(4)}, ${lng.toFixed(4)} (View on Map)
+                            </a>
+                        </p>`;
+                    }
+
+                    // Format Screenshot
+                    let screenshotHtml = `
+                        <div style="margin-top: 10px;">
+                            <p><strong>Receipt:</strong></p>
+                    `;
+                    if (data.screenshot) {
+                        // If real screenshot exists, show it
+                        screenshotHtml += `
+                            <img src="${data.screenshot}" class="ss-preview" onclick="window.open('${data.screenshot}', '_blank')" />
+                            <br><small style="color:#555;">Click image to view full size</small>
+                        `;
+                    } else {
+                        // If no screenshot
+                        screenshotHtml += `
+                            <span class="no-ss">No receipt uploaded by customer.</span>
+                        `;
+                    }
+                    screenshotHtml += `</div>`;
+
+                    html += `
+                        <div class="card">
+                            ${data.status === 'Pending' ? '<div class="pending-badge">⏳ Awaiting Payment Verification</div>' : ''}
+                            <h3>${data.serviceType || 'Service'} - ${data.packageType || 'Package'}</h3>
+                            <p><strong>Cleaner:</strong> ${data.cleanerId || 'N/A'}</p>
+                            <p><strong>Customer:</strong> ${data.customerName || data.address || 'N/A'}</p>
+                            <p><strong>Phone:</strong> ${data.customerPhone || 'N/A'}</p>
+                            <p><strong>Date:</strong> ${data.date || 'N/A'} at ${data.time || 'N/A'}</p>
+                            <p><strong>Price:</strong> Rs ${data.price || 0}</p>
+                            <p><strong>Payment:</strong> ${data.paymentMethod || 'N/A'}</p>
+                            
+                            ${locationHtml}
+                            ${screenshotHtml}
+                            
+                            <div class="action-row" style="margin-top: 12px;">
+                                ${data.status === 'Pending' ? `
+                                    <button class="verify-btn" onclick="verifyPayment('${doc.id}')">✅ Verify Payment</button>
+                                ` : ''}
+                                <span>Status: 
+                                    <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
+                                        <option value="Pending" ${data.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                        <option value="Accepted" ${data.status === 'Accepted' ? 'selected' : ''}>Accepted</option>
+                                        <option value="On The Way" ${data.status === 'On The Way' ? 'selected' : ''}>On The Way</option>
+                                        <option value="Completed" ${data.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                                        <option value="Cancelled" ${data.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                                    </select>
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                bookingsList.innerHTML = html;
+
+                statTotal.textContent = total;
+                statPending.textContent = pending;
+                statCompleted.textContent = completed;
+                statCancelled.textContent = cancelled;
+                statRevenue.textContent = `Rs ${revenue.toLocaleString()}`;
+
+            } catch (error) {
+                bookingsList.innerHTML = `<div class="loading-msg" style="color:red;">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function verifyPayment(bookingId) {
+            try {
+                await db.collection("bookings").doc(bookingId).update({ status: "Accepted" });
+                alert("✅ Payment Verified! Cleaner assigned.");
+                loadDashboardData();
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        }
+
+        async function updateStatus(bookingId, newStatus) {
+            try {
+                await db.collection("bookings").doc(bookingId).update({ status: newStatus });
+                loadDashboardData();
+            } catch (error) {
+                alert("Error updating status: " + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
